@@ -303,7 +303,6 @@ void removeElement(struct RBTree* ptree, int target)
 {
     // 找到删除元素的位置
     struct TreeNode* pcur = ptree->proot;
-    printf("Before remove %d, tree size = %d\n", target, ptree->size);
     if (pcur == NULL) return;
     while (!isLeaf(pcur) && target != pcur->value)
         pcur = target>pcur->value?pcur->rchild:pcur->lchild;
