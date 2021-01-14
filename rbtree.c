@@ -108,7 +108,7 @@ struct TreeNode* getFarNephew(struct TreeNode* pnode)
 }
 
 // 左旋
-void leftRotate(struct TreeNode* pnode)
+void leftRotate(struct RBTree* ptree, struct TreeNode* pnode)
 {
     struct TreeNode* pa = pnode->parent;
     struct TreeNode* rchild = pnode->rchild;
@@ -121,6 +121,11 @@ void leftRotate(struct TreeNode* pnode)
         else
             pa->rchild = rchild;
     }
+    else  // 旋转节点为根节点
+    {
+        ptree->proot = rchild;
+    }
+    
     rchild->parent = pa;
     pnode->rchild = rlchild;
     rlchild->parent = pnode;
@@ -129,7 +134,7 @@ void leftRotate(struct TreeNode* pnode)
 }
 
 // 节点右旋
-void rightRotate(struct TreeNode* pnode)
+void rightRotate(struct RBTree* ptree, struct TreeNode* pnode)
 {
     struct TreeNode* pa = pnode->parent;
     struct TreeNode* lchild = pnode->lchild;
@@ -142,6 +147,9 @@ void rightRotate(struct TreeNode* pnode)
         else
             pa->rchild = lchild;
     }
+    else 
+        ptree->proot = lchild;
+
     lchild->parent = pa;
     pnode->lchild = lrchild;
     lrchild->parent = pnode;
@@ -187,7 +195,7 @@ void insertFixup(struct RBTree* ptree, struct TreeNode* pnode)
         {
             grandpa->color = NODE_RED;
             pcur->parent->color = NODE_BLACK;
-            isLeftChild(pcur)?rightRotate(grandpa):leftRotate(grandpa);
+            isLeftChild(pcur)?rightRotate(ptree, grandpa):leftRotate(ptree, grandpa);
             if (ptree->proot == grandpa)  // 重新调整树的根节点
                 ptree->proot = grandpa->parent;
             break;
@@ -198,7 +206,7 @@ void insertFixup(struct RBTree* ptree, struct TreeNode* pnode)
         else
         {
             struct TreeNode* pa = pcur->parent;
-            isLeftChild(pcur)?rightRotate(pa):leftRotate(pa);
+            isLeftChild(pcur)?rightRotate(ptree, pa):leftRotate(ptree, pa);
             pcur = pa;
         }
     }
@@ -242,7 +250,7 @@ void removeFixup(struct RBTree* ptree, struct TreeNode* pnode)
         {
             pcur->parent->color = NODE_RED;
             pbrother->color = NODE_BLACK;
-            isLeftChild(pcur)?leftRotate(pcur->parent):rightRotate(pcur->parent);
+            isLeftChild(pcur)?leftRotate(ptree, pcur->parent):rightRotate(ptree, pcur->parent);
         }
 
         // case 2: 兄弟节点为黑色
@@ -254,7 +262,7 @@ void removeFixup(struct RBTree* ptree, struct TreeNode* pnode)
             pbrother = getBrother(pcur);
             pNearNephew->color = NODE_BLACK;
             pbrother->color = NODE_RED;
-            isLeftChild(pcur)?rightRotate(pbrother):leftRotate(pbrother);
+            isLeftChild(pcur)?rightRotate(ptree, pbrother):leftRotate(ptree, pbrother);
         }
 
         // case 2.2: 较远的侄子节点为红色(有红色节点的分支可以借出去一个黑色，再把该红色节点染黑)
@@ -266,7 +274,7 @@ void removeFixup(struct RBTree* ptree, struct TreeNode* pnode)
             int tmpcolor = pcur->parent->color;
             pcur->parent->color = pbrother->color;
             pbrother->color = tmpcolor;
-            isLeftChild(pcur)?leftRotate(pcur->parent):rightRotate(pcur->parent);
+            isLeftChild(pcur)?leftRotate(ptree, pcur->parent):rightRotate(ptree, pcur->parent);
 
             pFarNephew->color = NODE_BLACK;
             break;
@@ -284,6 +292,8 @@ void removeFixup(struct RBTree* ptree, struct TreeNode* pnode)
         
         // case 2.4: 两个侄子节点均为黑色，父节点也为黑色
         // 操作: 兄弟节点染红，父节点上调
+        pbrother = getBrother(pcur);
+        pbrother->color = NODE_RED;
         pcur = pcur->parent;
     }
 }
@@ -293,6 +303,7 @@ void removeElement(struct RBTree* ptree, int target)
 {
     // 找到删除元素的位置
     struct TreeNode* pcur = ptree->proot;
+    printf("Before remove %d, tree size = %d\n", target, ptree->size);
     if (pcur == NULL) return;
     while (!isLeaf(pcur) && target != pcur->value)
         pcur = target>pcur->value?pcur->rchild:pcur->lchild;
@@ -342,9 +353,7 @@ void removeElement(struct RBTree* ptree, int target)
     if (pcur == ptree->proot)
     {
         changeToLeaf(pcur);
-        free(pcur);
-        ptree->proot = NULL;
-        ptree->size = 0;
+        ptree->size--;
         return;
     }
 
